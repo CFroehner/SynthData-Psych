@@ -1,1 +1,1 @@
-# llm-psychometrics
+# SynthData-Psych
