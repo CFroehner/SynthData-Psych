@@ -4,16 +4,26 @@
 import pandas as pd
 from pydantic import BaseModel, create_model
 from openai import OpenAI
+import numpy as np
+import os
 
-client = OpenAI(api_key="insert your personal API key, generated on the OpenAI website here")
-
-# Set desired sample size
-samplesize = 150
+client = OpenAI(api_key="KEY")
 
 # Read in responses to generic Conscientiousness items form IPIP (Goldberg, 2006) and generic Honesty-Humility from HEXACO (Ashton, 2007)
 # from Prolific sample, including demographic data
-Input_dataset = pd.read_csv("Data/HumanPromptBase.csv", nrows=samplesize)
+Input_dataset = pd.read_csv("Data/Prompt_Input.csv")
 print(Input_dataset.head())
+
+# Create output folder if not existent
+output_dir = "Data/LLM_Responses"
+os.makedirs(output_dir, exist_ok=True)
+
+# Split into batches to avoid crash and run each batch manually
+num_batches = 20
+shuffled = Input_dataset.sample(frac=1, random_state=123).reset_index(drop=True)
+batches = np.array_split(shuffled, num_batches)
+batch_idx = 1  # pick a batch to run, set to 1, .., num_batches
+Input_dataset = batches[batch_idx - 1].reset_index(drop=True)
 
 # Set up response data frame for contextualized Conscientiousness and Honesty-Humility at Work items
 results_df = pd.DataFrame(columns=[
@@ -151,5 +161,7 @@ for i in range(len(Input_dataset)):
     ]
 
 # Save the results to a CSV file
-results_df.to_csv("syntheticResponses.csv", index=False)
-print("Results saved.")
+out_path = os.path.join(output_dir, f"syntheticResponses_batch{batch_idx:02d}.csv")
+results_df.to_csv(out_path, index=False)
+# results_df.to_csv("syntheticResponses.csv", index=False)
+print(f"Results saved for batch {batch_idx}: {out_path}")
